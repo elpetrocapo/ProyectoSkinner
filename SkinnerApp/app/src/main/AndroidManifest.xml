@@ -21,8 +21,8 @@
         </activity>
 
         <provider
-            android:name=".GenericFileProvider"
-            android:authorities="${applicationId}.provider"
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.example.skinnerapp.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true"
             tools:ignore="MissingClass">

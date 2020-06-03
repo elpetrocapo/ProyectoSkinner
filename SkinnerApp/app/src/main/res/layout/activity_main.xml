@@ -5,15 +5,15 @@
 
     <ImageView
         android:id="@+id/imageview"
-        android:layout_width="match_parent"
-        android:layout_height="610dp"
+        android:layout_width="336dp"
+        android:layout_height="326dp"
         android:layout_above="@+id/button_image"
         android:layout_centerHorizontal="true" />
 
     <Button
         android:id="@+id/button_image"
-        android:layout_width="434dp"
-        android:layout_height="133dp"
+        android:layout_width="235dp"
+        android:layout_height="65dp"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:onClick="takePicture"
