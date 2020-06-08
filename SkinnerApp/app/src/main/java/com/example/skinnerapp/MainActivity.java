@@ -10,27 +10,47 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Base64;
+import android.util.JsonReader;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.skinnerapp.Interface.JsonPlaceHolderApi;
+import com.example.skinnerapp.Model.AnalizarImagenRequest;
+import com.example.skinnerapp.Model.AnalizarImagenResponse;
+
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
     private Button takePictureButton;
     private ImageView imageView;
     static final int REQUEST_TAKE_PHOTO = 1;
     private String currentPhotoPath;
+    private Button btnAnalizar;
+    private TextView textView;
+    private File f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +59,15 @@ public class MainActivity extends AppCompatActivity {
 
         takePictureButton = (Button) findViewById(R.id.button_image);
         imageView = (ImageView) findViewById(R.id.imageview);
+        textView = (TextView) findViewById(R.id.text_call);
+
+        btnAnalizar = (Button) findViewById(R.id.button_analizar);
+        btnAnalizar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                callService();
+            }
+        });
 
         takePictureButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -46,6 +75,65 @@ public class MainActivity extends AppCompatActivity {
                 askCameraPermissions();
             }
         });
+    }
+
+    private void callService() {
+                Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("http://192.168.1.20:80/Service1.svc/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        JsonPlaceHolderApi service = retrofit.create(JsonPlaceHolderApi.class);
+
+        AnalizarImagenRequest req = new AnalizarImagenRequest(convertImgString());
+        Call<AnalizarImagenResponse> call= service.savePost(req);
+        call.enqueue(new Callback<AnalizarImagenResponse>() {
+            @Override
+            public void onResponse(Call<AnalizarImagenResponse> call, Response<AnalizarImagenResponse> response) {
+                textView.setText(response.toString());
+
+                Toast.makeText(MainActivity.this, "Se envío correctamente la petición. Falta retorno del servidor."+ response.toString(), Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onFailure(Call<AnalizarImagenResponse> call, Throwable t) {
+                textView.setText(t.getMessage());
+            }
+
+        });
+        /*
+        Call<String> call = service.callTest();
+        call.enqueue(new Callback<String>() {
+            @Override
+            public void onResponse(Call<String> call, Response<String> response) {
+                textView.setText(response.toString());
+            }
+
+            @Override
+            public void onFailure(Call<String> call, Throwable t) {
+                textView.setText(t.getMessage());
+            }
+        });*/
+
+    }
+
+    private String convertImgString(){
+
+        int size = (int) f.length();
+        byte[] bytes = new byte[size];
+        try {
+            BufferedInputStream buf = new BufferedInputStream(new FileInputStream(f));
+            buf.read(bytes, 0, bytes.length);
+            buf.close();
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        return Base64.encodeToString(bytes,Base64.DEFAULT);
     }
 
     private void askCameraPermissions() {
@@ -98,7 +186,7 @@ public class MainActivity extends AppCompatActivity {
 
        if(requestCode == REQUEST_TAKE_PHOTO){
            if(resultCode == Activity.RESULT_OK){
-               File f =new File(currentPhotoPath);
+               f =new File(currentPhotoPath);
                imageView.setImageURI(Uri.fromFile(f));
                Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
                Uri contentUri = Uri.fromFile(f);

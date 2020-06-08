@@ -18,4 +18,13 @@
         android:layout_centerHorizontal="true"
         android:onClick="takePicture"
         android:text="Tomar foto" />
+    <Button
+        android:layout_width="235dp"
+        android:layout_height="65dp"
+        android:text="Analizar"
+        android:id="@+id/button_analizar"/>
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/text_call"/>
 </LinearLayout>
