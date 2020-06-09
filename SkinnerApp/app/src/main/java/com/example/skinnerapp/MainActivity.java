@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void callService() {
                 Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://192.168.1.20:80/Service1.svc/")
+                .baseUrl("https://skinnerserver.herokuapp.com/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
