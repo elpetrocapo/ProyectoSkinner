@@ -19,6 +19,7 @@ import android.util.JsonReader;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -44,11 +45,11 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
-    private Button takePictureButton;
+    private ImageView takePictureButton;
     private ImageView imageView;
     static final int REQUEST_TAKE_PHOTO = 1;
     private String currentPhotoPath;
-    private Button btnAnalizar;
+    private ImageView btnAnalizar;
     private TextView textView;
     private File f;
 
@@ -57,18 +58,19 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        takePictureButton = (Button) findViewById(R.id.button_image);
+        takePictureButton = (ImageView) findViewById(R.id.button_image);
         imageView = (ImageView) findViewById(R.id.imageview);
         textView = (TextView) findViewById(R.id.text_call);
 
-        btnAnalizar = (Button) findViewById(R.id.button_analizar);
+
+        btnAnalizar = (ImageView) findViewById(R.id.button_analizar);
         btnAnalizar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 callService();
             }
         });
-
+        btnAnalizar.setVisibility(View.GONE);
         takePictureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -79,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void callService() {
                 Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://192.168.1.20:80/Service1.svc/")
+                .baseUrl("https://skinnerserver.herokuapp.com/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
@@ -90,8 +92,8 @@ public class MainActivity extends AppCompatActivity {
         call.enqueue(new Callback<AnalizarImagenResponse>() {
             @Override
             public void onResponse(Call<AnalizarImagenResponse> call, Response<AnalizarImagenResponse> response) {
-                textView.setText(response.toString());
-
+                //textView.setText(response.toString());
+                textView.setText(response.body().getMessage());
                 Toast.makeText(MainActivity.this, "Se envío correctamente la petición. Falta retorno del servidor."+ response.toString(), Toast.LENGTH_SHORT).show();
             }
 
@@ -192,6 +194,7 @@ public class MainActivity extends AppCompatActivity {
                Uri contentUri = Uri.fromFile(f);
                mediaScanIntent.setData(contentUri);
                this.sendBroadcast(mediaScanIntent);
+               btnAnalizar.setVisibility(View.VISIBLE);
            }
        }
     }
