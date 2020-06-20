@@ -10,6 +10,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -18,6 +19,8 @@ import android.util.Base64;
 import android.util.JsonReader;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -37,7 +40,10 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import id.zelory.compressor.Compressor;
+import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -52,6 +58,9 @@ public class MainActivity extends AppCompatActivity {
     private ImageView btnAnalizar;
     private TextView textView;
     private File f;
+    private String bodyPart;
+    String encodedImage;
+    public final static int REQUEST_ACTIVITY_BODY = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,34 +76,49 @@ public class MainActivity extends AppCompatActivity {
         btnAnalizar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Animation animation = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.alpha);
+                btnAnalizar.startAnimation(animation);
                 callService();
             }
         });
         btnAnalizar.setVisibility(View.GONE);
+        final Intent activityBody = new Intent(this, BodyActivity.class);
         takePictureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Animation animation = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.alpha);
+                takePictureButton.startAnimation(animation);
+                //startActivityForResult(activityBody, REQUEST_ACTIVITY_BODY);
                 askCameraPermissions();
             }
         });
     }
 
     private void callService() {
-                Retrofit retrofit = new Retrofit.Builder()
+
+
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .connectTimeout(1, TimeUnit.MINUTES)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .build();
+
+        Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://skinnerserver.herokuapp.com/")
+                .client(okHttpClient)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
         JsonPlaceHolderApi service = retrofit.create(JsonPlaceHolderApi.class);
 
-        AnalizarImagenRequest req = new AnalizarImagenRequest(convertImgString());
+        AnalizarImagenRequest req = new AnalizarImagenRequest(encodedImage);
         Call<AnalizarImagenResponse> call= service.savePost(req);
         call.enqueue(new Callback<AnalizarImagenResponse>() {
             @Override
             public void onResponse(Call<AnalizarImagenResponse> call, Response<AnalizarImagenResponse> response) {
-                //textView.setText(response.toString());
+
                 textView.setText(response.body().getMessage());
-                Toast.makeText(MainActivity.this, "Se envío correctamente la petición. Falta retorno del servidor."+ response.toString(), Toast.LENGTH_SHORT).show();
+                //Toast.makeText(MainActivity.this, "Se envío correctamente la petición. Falta retorno del servidor."+ response.toString(), Toast.LENGTH_SHORT).show();
             }
 
             @Override
@@ -103,20 +127,6 @@ public class MainActivity extends AppCompatActivity {
             }
 
         });
-        /*
-        Call<String> call = service.callTest();
-        call.enqueue(new Callback<String>() {
-            @Override
-            public void onResponse(Call<String> call, Response<String> response) {
-                textView.setText(response.toString());
-            }
-
-            @Override
-            public void onFailure(Call<String> call, Throwable t) {
-                textView.setText(t.getMessage());
-            }
-        });*/
-
     }
 
     private String convertImgString(){
@@ -185,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
        //super.onActivityResult(requestCode, resultCode, data);
-
+        //ACTIVITY RESULT TAKE PICTURE
        if(requestCode == REQUEST_TAKE_PHOTO){
            if(resultCode == Activity.RESULT_OK){
                f =new File(currentPhotoPath);
@@ -195,8 +205,40 @@ public class MainActivity extends AppCompatActivity {
                mediaScanIntent.setData(contentUri);
                this.sendBroadcast(mediaScanIntent);
                btnAnalizar.setVisibility(View.VISIBLE);
+
+               //encodedImage = convertImgString();
+
+               Bitmap compressedImgBitmap = null;
+               try {
+                   compressedImgBitmap = new Compressor(this).compressToBitmap(f);
+               } catch (IOException e) {
+                   e.printStackTrace();
+               }
+
+               ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+               compressedImgBitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
+               imageView.setImageBitmap(compressedImgBitmap);
+               byte[] byteArrayImage = byteArrayOutputStream.toByteArray();
+               encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
            }
        }
+        //ACTIVITY RESULT OPEN OTHERS ACTIVITIES
+
+        switch(requestCode) {
+            case REQUEST_ACTIVITY_BODY:
+                if(resultCode == Activity.RESULT_OK) {
+                    Bundle bundle = data.getExtras();
+
+                    if(bundle.getString("bodyPart")!= null){
+                        bodyPart = bundle.getString("bodyPart");
+                        Toast.makeText(this,"Seleccionaste tu: "+bodyPart,Toast.LENGTH_SHORT).show();
+                        askCameraPermissions();
+                    }
+
+                }
+                break;
+       }
+
     }
 
     private File createImageFile() throws IOException {
