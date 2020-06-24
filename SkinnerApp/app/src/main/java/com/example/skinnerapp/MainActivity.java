@@ -122,11 +122,11 @@ public class MainActivity extends AppCompatActivity {
                 .build();
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://192.168.1.20:8080/")
+                .baseUrl("http://192.168.1.107:8080/")
                 .client(okHttpClient)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
-
+        final String[] textoRespuesta = {""};
         JsonPlaceHolderApi service = retrofit.create(JsonPlaceHolderApi.class);
         showLoadingDialog();
         AnalizarImagenRequest req = new AnalizarImagenRequest(encodedImage);
@@ -137,12 +137,21 @@ public class MainActivity extends AppCompatActivity {
 
                 textView.setText(response.body().getMessage());
                 dismissLoadingDialog();
+				textoRespuesta[0] =response.body().getMessage();
+                Intent resultIntent = new Intent(MainActivity.this,ResponseActivity.class);
+                resultIntent.putExtra("respuestaServidor", textoRespuesta[0]);  // put data that you want returned to activity A
+                resultIntent.putExtra("estado", response.code());  // put data that you want returned to activity A
+                startActivity(resultIntent);
                 //Toast.makeText(MainActivity.this, "Se envío correctamente la petición. Falta retorno del servidor."+ response.toString(), Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onFailure(Call<AnalizarImagenResponse> call, Throwable t) {
                 textView.setText(t.getMessage());
+				Intent resultIntent = new Intent(MainActivity.this,ResponseActivity.class);
+                resultIntent.putExtra("respuestaServidor", t.getMessage());  // put data that you want returned to activity A
+                resultIntent.putExtra("estado", 404);  // put data that you want returned to activity A
+                startActivity(resultIntent);
             }
 
         });
