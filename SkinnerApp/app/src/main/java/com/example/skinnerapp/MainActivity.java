@@ -8,6 +8,7 @@ import androidx.core.content.FileProvider;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -24,6 +25,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -54,12 +56,16 @@ public class MainActivity extends AppCompatActivity {
     private ImageView takePictureButton;
     private ImageView imageView;
     static final int REQUEST_TAKE_PHOTO = 1;
+    static final int OPEN_GALERY = 10;
     private String currentPhotoPath;
     private ImageView btnAnalizar;
     private TextView textView;
     private File f;
     private String bodyPart;
     String encodedImage;
+    private ProgressDialog progress;
+    Button btngaleria;
+
     public final static int REQUEST_ACTIVITY_BODY = 100;
 
     @Override
@@ -71,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
         imageView = (ImageView) findViewById(R.id.imageview);
         textView = (TextView) findViewById(R.id.text_call);
 
-
+        btngaleria =(Button)findViewById(R.id.btngaleria);
         btnAnalizar = (ImageView) findViewById(R.id.button_analizar);
         btnAnalizar.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -88,15 +94,27 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Animation animation = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.alpha);
                 takePictureButton.startAnimation(animation);
-                //startActivityForResult(activityBody, REQUEST_ACTIVITY_BODY);
-                askCameraPermissions();
+                startActivityForResult(activityBody, REQUEST_ACTIVITY_BODY);
+                //askCameraPermissions();
+            }
+        });
+
+        btngaleria.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                textView.setText("");
+                openGalery();
             }
         });
     }
 
+    private void openGalery() {
+        Intent pickPhoto = new Intent(Intent.ACTION_PICK,
+                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        startActivityForResult(pickPhoto , OPEN_GALERY);
+    }
+
     private void callService() {
-
-
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .connectTimeout(1, TimeUnit.MINUTES)
                 .readTimeout(60, TimeUnit.SECONDS)
@@ -104,13 +122,13 @@ public class MainActivity extends AppCompatActivity {
                 .build();
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://skinnerserver.herokuapp.com/")
+                .baseUrl("http://192.168.1.20:8080/")
                 .client(okHttpClient)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
         JsonPlaceHolderApi service = retrofit.create(JsonPlaceHolderApi.class);
-
+        showLoadingDialog();
         AnalizarImagenRequest req = new AnalizarImagenRequest(encodedImage);
         Call<AnalizarImagenResponse> call= service.savePost(req);
         call.enqueue(new Callback<AnalizarImagenResponse>() {
@@ -118,6 +136,7 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(Call<AnalizarImagenResponse> call, Response<AnalizarImagenResponse> response) {
 
                 textView.setText(response.body().getMessage());
+                dismissLoadingDialog();
                 //Toast.makeText(MainActivity.this, "Se envío correctamente la petición. Falta retorno del servidor."+ response.toString(), Toast.LENGTH_SHORT).show();
             }
 
@@ -127,6 +146,11 @@ public class MainActivity extends AppCompatActivity {
             }
 
         });
+    }
+
+    protected void onResume() {
+        dismissLoadingDialog();
+        super.onResume();
     }
 
     private String convertImgString(){
@@ -153,6 +177,7 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE ,Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
         }else{
             dispatchTakePictureIntent();
+            textView.setText("");
         }
     }
 
@@ -206,8 +231,8 @@ public class MainActivity extends AppCompatActivity {
                this.sendBroadcast(mediaScanIntent);
                btnAnalizar.setVisibility(View.VISIBLE);
 
-               //encodedImage = convertImgString();
-
+               encodedImage = convertImgString();
+/*
                Bitmap compressedImgBitmap = null;
                try {
                    compressedImgBitmap = new Compressor(this).compressToBitmap(f);
@@ -219,7 +244,7 @@ public class MainActivity extends AppCompatActivity {
                compressedImgBitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
                imageView.setImageBitmap(compressedImgBitmap);
                byte[] byteArrayImage = byteArrayOutputStream.toByteArray();
-               encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
+               encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);*/
            }
        }
         //ACTIVITY RESULT OPEN OTHERS ACTIVITIES
@@ -231,8 +256,28 @@ public class MainActivity extends AppCompatActivity {
 
                     if(bundle.getString("bodyPart")!= null){
                         bodyPart = bundle.getString("bodyPart");
-                        Toast.makeText(this,"Seleccionaste tu: "+bodyPart,Toast.LENGTH_SHORT).show();
                         askCameraPermissions();
+                    }
+
+                }
+                break;
+            case OPEN_GALERY:
+                if(resultCode == RESULT_OK){
+                    Uri selectedImage = data.getData();
+                    imageView.setImageURI(selectedImage);
+                    if (selectedImage != null) {
+                        Bitmap compressedImgBitmap = null;
+                        try {
+                            compressedImgBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), selectedImage);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                        compressedImgBitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
+                        imageView.setImageBitmap(compressedImgBitmap);
+                        byte[] byteArrayImage = byteArrayOutputStream.toByteArray();
+                        encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
+                        btnAnalizar.setVisibility(View.VISIBLE);
                     }
 
                 }
@@ -258,4 +303,20 @@ public class MainActivity extends AppCompatActivity {
         return image;
     }
 
+    public void showLoadingDialog() {
+
+        if (progress == null) {
+            progress = new ProgressDialog(this);
+            progress.setTitle("Analizador");
+            progress.setMessage("Skinner está analizando su imagen, aguarde un momento.");
+        }
+        progress.show();
+    }
+
+    public void dismissLoadingDialog() {
+
+        if (progress != null && progress.isShowing()) {
+            progress.dismiss();
+        }
+    }
 }

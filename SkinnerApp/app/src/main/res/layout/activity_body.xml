@@ -7,17 +7,50 @@
     tools:context=".BodyActivity"
     android:background="@drawable/gradient_background">
 
+    <TextView
+        android:layout_width="150dp"
+        android:layout_height="50dp"
+        android:layout_x="34dp"
+        android:layout_y="86dp"
+        android:textAlignment="center"
+        android:text="Vista Frontal"
+        android:gravity="center_horizontal" />
+
+    <TextView
+        android:layout_width="150dp"
+        android:layout_height="50dp"
+        android:layout_x="230dp"
+        android:layout_y="86dp"
+        android:textAlignment="center"
+        android:text="Vista Trasera"
+        android:gravity="center_horizontal" />
+
     <ImageView
         android:layout_width="213dp"
         android:layout_height="518dp"
         android:layout_marginEnd="184dp"
         android:layout_marginRight="184dp"
-        android:layout_x="-3dp"
-        android:layout_y="132dp"
+        android:layout_x="-1dp"
+        android:layout_y="133dp"
         android:src="@mipmap/skinner_body_front"
         app:layout_constraintEnd_toEndOf="parent"
         tools:ignore="MissingConstraints"
-        tools:layout_editor_absoluteY="69dp"></ImageView>
+        tools:layout_editor_absoluteY="69dp"
+        android:id="@+id/front"></ImageView>
+
+    <ImageView
+        android:layout_width="213dp"
+        android:layout_height="518dp"
+        android:layout_marginEnd="184dp"
+        android:layout_marginRight="184dp"
+        android:layout_x="-1dp"
+        android:layout_y="133dp"
+        android:src="@mipmap/skinner_body_front_mask"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:ignore="MissingConstraints"
+        tools:layout_editor_absoluteY="69dp"
+        android:visibility="invisible"
+        android:id="@+id/front_mask"></ImageView>
 
     <ImageView
         android:layout_width="244dp"
@@ -26,15 +59,19 @@
         android:layout_y="27dp"
         android:src="@mipmap/skinner_body_back"
         tools:layout_editor_absoluteX="190dp"
-        tools:layout_editor_absoluteY="75dp"></ImageView>
+        tools:layout_editor_absoluteY="75dp"
+        android:id="@+id/back"></ImageView>
 
-    <Button
-        android:id="@+id/button_frente"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_x="57dp"
-        android:layout_y="141dp"
-        android:text="Frente"
-        tools:layout_editor_absoluteX="78dp"
-        tools:layout_editor_absoluteY="132dp" />
+    <ImageView
+        android:layout_width="244dp"
+        android:layout_height="716dp"
+        android:layout_x="190dp"
+        android:layout_y="27dp"
+        android:src="@mipmap/skinner_body_back_mask"
+        tools:layout_editor_absoluteX="190dp"
+        android:visibility="invisible"
+        tools:layout_editor_absoluteY="75dp"
+        android:id="@+id/back_mask"></ImageView>
+
+
 </AbsoluteLayout>

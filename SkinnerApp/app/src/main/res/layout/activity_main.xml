@@ -5,13 +5,19 @@
     android:layout_height="match_parent"
     android:background="@drawable/gradient_background">
 
+    <Button
+        android:id="@+id/btngaleria"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Galeria" />
+
     <ImageView
         android:id="@+id/imageview"
         android:layout_width="336dp"
-        android:layout_height="326dp"
-        android:layout_gravity="center"
+        android:layout_height="268dp"
         android:layout_above="@+id/button_image"
-        android:layout_centerHorizontal="true" />
+        android:layout_centerHorizontal="true"
+        android:layout_gravity="center" />
 
     <ImageView
         android:id="@+id/button_image"
@@ -33,5 +39,8 @@
     <TextView
         android:id="@+id/text_call"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="100dp" />
+
+
+
 </LinearLayout>
