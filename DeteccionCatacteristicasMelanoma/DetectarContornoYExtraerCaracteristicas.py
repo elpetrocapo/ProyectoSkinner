@@ -1,6 +1,19 @@
 import cv2
 import numpy as np
 from PIL import Image
+
+class AreaInteres:
+    """ Clase que representa el area de interes """
+
+    def __init__(self):
+        """ instancia la clase de area interes con sus caracteristicas """
+        self.asimetria = 0
+        self.borde = 0
+        self.color =0
+        self.contornoInteres=0
+        self.diametro= 0
+        self.imagen=0
+
 def find_histogram(clt):
     """
     create a histogram with k clusters
@@ -33,7 +46,7 @@ from sklearn.cluster import KMeans
 
 # read and scale down image
 
-img = cv2.pyrDown(cv2.imread('niplegastontocado.jpg', cv2.IMREAD_UNCHANGED))
+img = cv2.pyrDown(cv2.imread('mole.jpg', cv2.IMREAD_UNCHANGED))
 #img = cv2.GaussianBlur(img, (5,5), 0)
 img = cv2.resize(img, (800, 600))
 imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -55,10 +68,9 @@ contours, hier = cv2.findContours(threshed_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_
 
 final_contours = []
 areasDeInteres = []
-
 for contour in contours:
-    area = cv2.contourArea(contour)
-    if area > 2000:
+    areas = cv2.contourArea(contour)
+    if areas > 2000:
         final_contours.append(contour)
 
 #for i in range(len(final_contours)):
@@ -73,8 +85,8 @@ for c in contours:
     center = (int(x), int(y))
     radius = int(radius)
 
-    print(radius)
     if radius>35 and radius<400:
+        area = AreaInteres()
         im=Image.fromarray(imgRGB.astype('uint8'),'RGB')
         x1=int(x-w)
         y1=int(y-h)
@@ -88,70 +100,91 @@ for c in contours:
             x2=im.width
         if(y2>im.height):
             y2=im.height
-        ROI = im.crop((x1,y1,x2,y2))
-        ROI.show()
-        areasDeInteres.append(ROI)
         img = cv2.circle(img, center, radius, (255, 0, 0), 2)
         contornopiola=c
-        #cv2.imshow("A VER", img)
+        ROI = im.crop((x1,y1,x2,y2))
+        #ROI.show()
+        area.imagen=ROI
+        area.diametro=2*radius
+        areasDeInteres.append(area)
+        area.contornoInteres=contornopiola
         cv2.waitKey(0)
 
 
-
-
-print("LONGITUD PAPAAAAAA:")
-print(len(c))
 cv2.drawContours(img, contornopiola, -1, (255, 255, 0), 1)
-ellipse = cv2.fitEllipse(contornopiola)
-ellipse_pnts = cv2.ellipse2Poly( (int(ellipse[0][0]),int(ellipse[0][1]) ) ,( int(ellipse[1][0]),int(ellipse[1][1]) ),int(ellipse[2]),0,360,1)
-comp = cv2.matchShapes(contornopiola,ellipse_pnts,1,0.0)
-cv2.drawContours(img, [contornopiola], -1, (255, 255, 0), 1)
 
 mask = np.zeros_like(img) # Create mask where white is what we want, black otherwise
 
 cv2.drawContours(mask, contours, -1, (255, 255, 0), -1) # Draw filled contour in mask
 out = np.zeros_like(img) # Extract out the object and place into output image
 out[mask == 255] = img[mask == 255]
-cv2.imshow('mask', mask)
+#cv2.imshow('mask', mask)
 AND = cv2.bitwise_or(img,mask)
 #from PIL import Image
-cv2.imshow('Output', out)
-cv2.imshow("FINAL", img)
+#cv2.imshow('Output', out)
+#cv2.imshow("FINAL", img)
 
-for imagen in areasDeInteres:
-    np_im = np.array(imagen)
+for area in areasDeInteres:
+    np_im = np.array(area.imagen)
     imgBGR = cv2.cvtColor(np_im, cv2.COLOR_RGB2BGR)
-    cv2.imshow("Analisis",imgBGR)
+    ret, threshed_img2 = cv2.threshold(cv2.cvtColor(imgBGR, cv2.COLOR_BGR2GRAY),
+                                      127, 255, cv2.THRESH_BINARY)
+    # find contours and get the external one
+
+    contours, hier = cv2.findContours(threshed_img2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    for c in contours:
+        # get the bounding rect
+        x, y, w, h = cv2.boundingRect(c)
+        # finally, get the min enclosing circle
+
+        (x, y), radius = cv2.minEnclosingCircle(c)
+        # convert all values to int
+        center = (int(x), int(y))
+        radius = int(radius)
+
+        if radius > 35 and radius < 400:
+            contornopiola = c
+            area.contornoInteres = contornopiola
+            area.borde = imgBGR
+            cv2.waitKey(0)
+    cv2.drawContours(imgBGR, contornopiola, -1, (255, 255, 0), 4)
+    area.borde = imgBGR
     np_im = np_im.reshape((np_im.shape[0] * np_im.shape[1],3)) #represent as row*column,channel number
     clt = KMeans(n_clusters=3) #cluster number
     clt.fit(np_im)
 
     hist = find_histogram(clt)
     bar = plot_colors2(hist, clt.cluster_centers_)
-
     plt.axis("off")
-    plt.imshow(bar)
-    plt.show()
-
-
-
-
-
+    #plt.imshow(bar)
+    #plt.show()
+    area.color=bar
+    ellipse = cv2.fitEllipse(area.contornoInteres)
+    ellipse_pnts = cv2.ellipse2Poly((int(ellipse[0][0]), int(ellipse[0][1])), (int(ellipse[1][0]), int(ellipse[1][1])),
+                                    int(ellipse[2]), 0, 360, 1)
+    comp = cv2.matchShapes(area.contornoInteres, ellipse_pnts, 1, 0.0)
+    if comp < 0.099:
+        area.asimetria="Asimetrico"
+        #print("Asymmetric")
+    else:
+        area.asimetria="Simetrico"
+        #print("Symmetric")
 
 # Show the output image
 #cv2.imshow('Output', out)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
-if comp < 0.099:
-	print("Asymmetric")
-else:
-	print("Symmetric")
 #cv2.imshow("FINAL", img)
-
-while True:
-    key = cv2.waitKey(1)
-    if key == 27: #ESC key to break
-        break
+n=1
+for objeto in areasDeInteres:
+    print("ESTOY EN OBJETO IN AREADEINTERES")
+    print("OBJETO: %d" %n)
+    print("ASIMETRIA: "+ objeto.asimetria)
+    print("DIAMETRO: %d" %objeto.diametro)
+    plt.imshow(objeto.color)
+    cv2.imshow("BORDES",objeto.borde)
+    cv2.waitKey(0)
+    n=n+1
 
 cv2.destroyAllWindows()
