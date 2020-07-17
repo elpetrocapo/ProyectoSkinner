@@ -46,7 +46,7 @@ from sklearn.cluster import KMeans
 
 # read and scale down image
 
-img = cv2.pyrDown(cv2.imread('mole.jpg', cv2.IMREAD_UNCHANGED))
+img = cv2.pyrDown(cv2.imread('niplegastontocado.jpg', cv2.IMREAD_UNCHANGED))
 #img = cv2.GaussianBlur(img, (5,5), 0)
 img = cv2.resize(img, (800, 600))
 imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -156,8 +156,8 @@ for area in areasDeInteres:
     hist = find_histogram(clt)
     bar = plot_colors2(hist, clt.cluster_centers_)
     plt.axis("off")
-    #plt.imshow(bar)
-    #plt.show()
+    # plt.imshow(bar)
+    # plt.show()
     area.color=bar
     ellipse = cv2.fitEllipse(area.contornoInteres)
     ellipse_pnts = cv2.ellipse2Poly((int(ellipse[0][0]), int(ellipse[0][1])), (int(ellipse[1][0]), int(ellipse[1][1])),
@@ -177,14 +177,42 @@ cv2.destroyAllWindows()
 
 #cv2.imshow("FINAL", img)
 n=1
-for objeto in areasDeInteres:
-    print("ESTOY EN OBJETO IN AREADEINTERES")
-    print("OBJETO: %d" %n)
-    print("ASIMETRIA: "+ objeto.asimetria)
-    print("DIAMETRO: %d" %objeto.diametro)
-    plt.imshow(objeto.color)
-    cv2.imshow("BORDES",objeto.borde)
-    cv2.waitKey(0)
-    n=n+1
+# for objeto in areasDeInteres:
+#     print("ESTOY EN OBJETO IN AREADEINTERES")
+#     print("OBJETO: %d" %n)
+#     print("ASIMETRIA: "+ objeto.asimetria)
+#     print("DIAMETRO: %d" %objeto.diametro)
+#     plt.imshow(objeto.color)
+#     # plt.imshow(bar)
+#     plt.show()
+#     cv2.imshow("BORDES",objeto.borde)
+#     cv2.waitKey(0)
+#     n=n+1
 
+jsonFinal=[]
+n=1
+
+for objeto in areasDeInteres:
+    imgBGR = cv2.cvtColor(objeto.borde, cv2.COLOR_RGB2BGR)
+    jsonItem = {}
+    pathImagen = "prueba %d" %n
+    jsonItem['pathImagen'] = pathImagen
+    jsonItem['contenido']= {}
+    jsonItem['contenido']['asimetria'] = objeto.asimetria
+    jsonItem['contenido']['diametro'] = objeto.diametro
+    plt.savefig(pathImagen+"Color.png")
+    plt.imshow(objeto.color)
+    
+    objeto.imagen.save(pathImagen+"Recortada.png")
+
+    imagenColor=Image.fromarray(objeto.color, 'RGB')
+    imagenColor.save(pathImagen+"Color.png")
+    
+    imagenBorde=Image.fromarray(imgBGR, 'RGB')
+    imagenBorde.save(pathImagen+"Borde.png")
+    
+    n=n+1
+    jsonFinal.append(jsonItem)
+
+print(jsonFinal)
 cv2.destroyAllWindows()
